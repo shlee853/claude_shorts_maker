@@ -1,0 +1,16 @@
+name = "seo-keyword-proxy"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+# 무료 플랜(서브요청 50개 제한)은 15, 유료 플랜이면 50까지 올려도 됩니다.
+MAX_BATCH = "15"
+
+# 비밀 값은 아래 명령으로 등록하세요 (이 파일에 적지 마세요):
+#   npx wrangler secret put PROXY_API_KEY
+#   npx wrangler secret put NAVER_AD_ACCESS_LICENSE
+#   npx wrangler secret put NAVER_AD_SECRET
+#   npx wrangler secret put NAVER_AD_CUSTOMER_ID
+#   npx wrangler secret put NAVER_CLIENT_ID
+#   npx wrangler secret put NAVER_CLIENT_SECRET
+#   npx wrangler secret put KE_API_KEY        (선택)

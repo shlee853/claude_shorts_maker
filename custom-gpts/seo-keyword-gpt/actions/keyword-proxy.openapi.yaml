@@ -1,0 +1,149 @@
+openapi: 3.1.0
+info:
+  title: SEO Keyword Research Proxy
+  description: 키워드 후보 확장과 키워드별 수요·공급·트렌드 지표 수집 및 점수 계산.
+  version: 1.0.0
+servers:
+  # 배포한 Worker 주소로 바꾸세요.
+  - url: https://seo-keyword-proxy.YOUR-SUBDOMAIN.workers.dev
+paths:
+  /expand:
+    post:
+      operationId: expandKeywords
+      summary: 핵심 단어로 연관·자동완성 키워드 후보를 확장한다. 검색량이 있는 후보가 먼저 정렬된다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [seeds]
+              properties:
+                seeds:
+                  type: array
+                  description: 주제에서 뽑은 핵심 단어 1~5개
+                  items: { type: string }
+                  minItems: 1
+                  maxItems: 5
+                limit:
+                  type: integer
+                  description: 반환할 최대 후보 수 (20~200, 기본 120)
+                language:
+                  type: string
+                  description: 언어 코드, 기본 ko
+                country:
+                  type: string
+                  description: 국가 코드, 기본 kr
+                includeGoogleRelated:
+                  type: boolean
+                  description: 구글 연관 키워드도 포함할지 (크레딧 소모, 기본 false)
+      responses:
+        "200":
+          description: 후보 키워드 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  seeds: { type: array, items: { type: string } }
+                  count: { type: integer }
+                  candidates:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        keyword: { type: string }
+                        monthlyVolume:
+                          type: [integer, "null"]
+                          description: 최근 30일 PC+모바일 검색량 (모르면 null)
+                        sources:
+                          type: array
+                          description: 내부용. 사용자에게 노출하지 말 것.
+                          items: { type: string }
+  /analyze:
+    post:
+      operationId: analyzeKeywords
+      summary: 키워드별 검색량, 블로그 문서 수, 경쟁 비율, 트렌드, 노출 기회를 수집하고 100점 만점 점수와 등급(S~D)을 계산한다. 1회 최대 15개.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [keywords]
+              properties:
+                keywords:
+                  type: array
+                  description: 분석할 키워드 (1회 최대 15개, 넘으면 여러 번 나눠 호출)
+                  items: { type: string }
+                  minItems: 1
+                  maxItems: 15
+                country:
+                  type: string
+                  description: 구글 지표용 국가 코드, 기본 kr
+      responses:
+        "200":
+          description: 점수 내림차순으로 정렬된 분석 결과
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scoringVersion: { type: string }
+                  generatedAt: { type: string }
+                  periods:
+                    type: object
+                    properties:
+                      volume: { type: string }
+                      trend: { type: string }
+                      posts: { type: string }
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        keyword: { type: string }
+                        grade: { type: string, enum: [S, A, B, C, D] }
+                        dataQuality: { type: string, enum: [full, partial] }
+                        score:
+                          type: object
+                          properties:
+                            total: { type: number }
+                            demand: { type: number, description: 수요 점수 (40점 만점) }
+                            competition: { type: number, description: 경쟁 점수 (30점 만점) }
+                            trend: { type: number, description: 트렌드 점수 (15점 만점) }
+                            exposure: { type: number, description: 노출 기회 점수 (15점 만점) }
+                            missing:
+                              type: array
+                              description: 수집하지 못한 지표 이름
+                              items: { type: string }
+                        metrics:
+                          type: object
+                          properties:
+                            monthlyVolume: { type: [integer, "null"] }
+                            monthlyPc: { type: [integer, "null"] }
+                            monthlyMobile: { type: [integer, "null"] }
+                            googleVolume: { type: [integer, "null"] }
+                            cpc: { type: [number, "null"] }
+                            adCompetition: { type: [string, "null"] }
+                            blogDocs: { type: [integer, "null"] }
+                            competitionRatio: { type: [number, "null"] }
+                            growthPct: { type: [number, "null"] }
+                            peakMonth: { type: [string, "null"] }
+                            top10AvgAgeDays: { type: [integer, "null"] }
+                            recent30dPosts: { type: [integer, "null"] }
+                            trendSeries:
+                              type: [array, "null"]
+                              items:
+                                type: object
+                                properties:
+                                  period: { type: string }
+                                  ratio: { type: number }
+components:
+  schemas: {}
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+security:
+  - bearerAuth: []

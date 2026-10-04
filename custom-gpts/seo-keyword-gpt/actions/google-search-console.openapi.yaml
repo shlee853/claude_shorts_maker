@@ -1,0 +1,86 @@
+openapi: 3.1.0
+info:
+  title: Google Search Console (선택)
+  description: 내 사이트가 이미 노출되고 있는 검색어와 평균 순위를 조회한다. OAuth 인증 필요.
+  version: 1.0.0
+servers:
+  - url: https://www.googleapis.com
+paths:
+  /webmasters/v3/sites:
+    get:
+      operationId: listSites
+      summary: 사용자가 권한을 가진 Search Console 사이트 목록
+      responses:
+        "200":
+          description: 사이트 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  siteEntry:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        siteUrl: { type: string }
+                        permissionLevel: { type: string }
+  /webmasters/v3/sites/{siteUrl}/searchAnalytics/query:
+    post:
+      operationId: searchAnalytics
+      summary: 기간 내 검색어별 클릭·노출·CTR·평균 순위 조회
+      parameters:
+        - name: siteUrl
+          in: path
+          required: true
+          description: URL 인코딩된 사이트 주소 (예 https%3A%2F%2Fexample.com%2F 또는 sc-domain%3Aexample.com)
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [startDate, endDate]
+              properties:
+                startDate: { type: string, description: YYYY-MM-DD (보통 90일 전) }
+                endDate: { type: string, description: YYYY-MM-DD (보통 3일 전) }
+                dimensions:
+                  type: array
+                  items: { type: string, enum: [query, page, country, device, date] }
+                  default: [query]
+                dimensionFilterGroups:
+                  type: array
+                  description: 예) [{"filters":[{"dimension":"query","operator":"contains","expression":"캠핑"}]}]
+                  items:
+                    type: object
+                    properties:
+                      filters:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            dimension: { type: string }
+                            operator: { type: string, enum: [contains, equals, notContains, notEquals, includingRegex] }
+                            expression: { type: string }
+                rowLimit: { type: integer, default: 250 }
+      responses:
+        "200":
+          description: 검색어별 성과
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rows:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        keys: { type: array, items: { type: string } }
+                        clicks: { type: number }
+                        impressions: { type: number }
+                        ctr: { type: number }
+                        position: { type: number }
+components:
+  schemas: {}
